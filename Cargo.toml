@@ -1,0 +1,9 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/edvige-imap",
+]
+
+[workspace.dependencies]
+tokio = { version = "1.50", features = ["full"] }
+tokio-rustls = "0.26"
