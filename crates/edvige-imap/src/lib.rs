@@ -1,9 +1,13 @@
 use std::sync::Arc;
 
 use rustls::pki_types::ServerName;
-use tokio::{io::AsyncReadExt, net::TcpStream, time::timeout};
+use tokio::{io::{AsyncBufReadExt, BufReader}, net::TcpStream, time::timeout};
 use tokio_rustls::TlsConnector;
 use std::time::Duration;
+
+use crate::commands::{ImapResponse, parse_imap_line};
+
+pub mod commands;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ImapError {
@@ -76,16 +80,37 @@ impl ImapClient {
         .await
         .map_err(|_| ImapError::ConnectionError("Connection timed out".to_string()))??;
         tracing::debug!("TCP connection established to {}:{}", self.config.host, self.config.port);
-        let mut tls_stream = connector.connect(domain, stream).await?;
+        let tls_stream = connector.connect(domain, stream).await?;
         tracing::debug!("TLS handshake completed with server at {}:{}", self.config.host, self.config.port);
 
-        let mut buffer = [0u8; 1024];
-        let n = tls_stream.read(&mut buffer).await?;
-        let response = String::from_utf8_lossy(&buffer[..n]);
-        tracing::debug!("Server response: {}", response);
+        handle_responses(tls_stream).await.map_err(|e| ImapError::Other(e.to_string()))?;
 
-        Err(ImapError::Other(
-            "Connection logic not implemented yet".to_string(),
-        ))
+        Ok(())
     }
+}
+
+async fn handle_responses<R: tokio::io::AsyncRead + Unpin>(reader: R) -> anyhow::Result<()> {
+    let mut reader = BufReader::new(reader);
+    let mut line = String::new();
+
+    loop {
+        line.clear();
+        let bytes_read = reader.read_line(&mut line).await?;
+        if bytes_read == 0 { break; } // Connection closed
+
+        match parse_imap_line(&line) {
+            Ok((_, response)) => match response {
+                ImapResponse::Tagged { tag, status, message } => {
+                    println!("[{}] Status: {:?}, Msg: {}", tag, status, message);
+                }
+                ImapResponse::Untagged { data } => {
+                    println!("[*] Update: {}", data);
+                    // Handle logic like: if data.contains("EXISTS") { ... }
+                }
+                _ => {}
+            },
+            Err(e) => eprintln!("Failed to parse line: {}. Error: {:?}", line, e),
+        }
+    }
+    Ok(())
 }
