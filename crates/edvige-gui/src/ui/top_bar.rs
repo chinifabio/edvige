@@ -8,6 +8,7 @@ pub enum TopBarAction {
     Search(String),
     ClearSearch,
     OpenAccountWizard,
+    OpenAbout,
 }
 
 pub fn render_top_bar(ui: &mut Ui, state: &mut AppState) -> Option<TopBarAction> {
@@ -37,6 +38,11 @@ pub fn render_top_bar(ui: &mut Ui, state: &mut AppState) -> Option<TopBarAction>
         // Accounts button
         if ui.button("⚙️ Accounts").clicked() {
             action = Some(TopBarAction::OpenAccountWizard);
+        }
+
+        // About button
+        if ui.button("ℹ About").clicked() {
+            action = Some(TopBarAction::OpenAbout);
         }
 
         ui.separator();

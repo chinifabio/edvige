@@ -58,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
 
     let storage = StorageEngine::open(config).await?;
     let events = EventBroadcaster::new();
-    let coordinator = DaemonCoordinator::new(storage, events);
+    let coordinator = DaemonCoordinator::new(storage.clone(), events);
 
     // 2. Start background account sync workers
     coordinator.start().await?;
@@ -74,13 +74,42 @@ async fn main() -> anyhow::Result<()> {
 
     let server = DaemonServer::new(coordinator.clone());
 
-    // 4. Setup graceful shutdown handler
+    // 4. Setup system tray integration
+    let (tray_shutdown_tx, mut tray_shutdown_rx) = tokio::sync::watch::channel(false);
+    let tray_handle = edvige_daemon::DaemonTrayHandle::spawn(tray_shutdown_tx);
+
+    let storage_for_tray = storage.clone();
+    let tray_clone = tray_handle.clone();
+    tokio::spawn(async move {
+        loop {
+            let mut total_unread = 0u32;
+            if let Ok(accounts) = storage_for_tray.list_accounts().await {
+                for acc in accounts {
+                    if let Ok(folders) = storage_for_tray.list_folders_for_account(acc.id).await {
+                        for f in folders {
+                            total_unread += f.unread_count;
+                        }
+                    }
+                }
+            }
+            tray_clone.update_unread_count(total_unread);
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        }
+    });
+
+    // 5. Setup graceful shutdown handler (Ctrl+C or Tray Quit)
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
     let coord_clone = coordinator.clone();
 
     tokio::spawn(async move {
-        tokio::signal::ctrl_c().await.expect("Failed to listen for ctrl+c");
-        tracing::info!("Received shutdown signal. Stopping daemon...");
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {
+                tracing::info!("Received Ctrl+C signal. Stopping daemon...");
+            }
+            _ = tray_shutdown_rx.changed() => {
+                tracing::info!("Received Quit signal from system tray. Stopping daemon...");
+            }
+        }
         coord_clone.shutdown().await;
         let _ = shutdown_tx.send(());
     });

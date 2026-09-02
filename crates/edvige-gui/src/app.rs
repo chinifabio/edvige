@@ -46,6 +46,7 @@ pub struct EdvigeApp {
     response_tx: mpsc::UnboundedSender<AppResponse>,
     socket_path: PathBuf,
     last_reconnect_attempt: Option<Instant>,
+    about_modal: crate::ui::AboutModal,
 }
 
 impl EdvigeApp {
@@ -63,6 +64,7 @@ impl EdvigeApp {
             response_tx,
             socket_path,
             last_reconnect_attempt: None,
+            about_modal: crate::ui::AboutModal::new(),
         };
 
         app.connect_to_daemon();
@@ -374,6 +376,9 @@ impl App for EdvigeApp {
                     }
                     TopBarAction::OpenAccountWizard => {
                         self.state.show_account_wizard = true;
+                    }
+                    TopBarAction::OpenAbout => {
+                        self.state.show_about = true;
                     }
                 }
             }
@@ -716,5 +721,7 @@ impl App for EdvigeApp {
                 }
             }
         }
+
+        self.about_modal.render(ctx, &mut self.state.show_about);
     }
 }

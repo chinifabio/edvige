@@ -46,6 +46,9 @@ pub struct AppState {
     pub wizard_smtp_sec: SecurityModeProto,
     pub wizard_user: String,
     pub wizard_pass: String,
+
+    // About modal
+    pub show_about: bool,
 }
 
 impl Default for AppState {
@@ -84,6 +87,7 @@ impl Default for AppState {
             wizard_smtp_sec: SecurityModeProto::SecurityTls,
             wizard_user: String::new(),
             wizard_pass: String::new(),
+            show_about: false,
         }
     }
 }

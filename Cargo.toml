@@ -28,8 +28,11 @@ eframe = "0.29"
 egui = "0.29"
 futures = "0.3"
 hyper-util = { version = "0.1", features = ["tokio"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+ksni = { version = "0.3", features = ["blocking"] }
 mail-parser = "0.9"
 nom = "8.0"
+notify-rust = "4.11"
 open = "5.3"
 prost = "0.13"
 rfd = "0.15"

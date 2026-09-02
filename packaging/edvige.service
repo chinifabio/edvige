@@ -1,0 +1,21 @@
+[Unit]
+Description=Edvige Email Background Sync Daemon
+Documentation=https://github.com/chinifabio/edvige
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/edvige-daemon
+Restart=on-failure
+RestartSec=5s
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/share/edvige %t
+
+[Install]
+WantedBy=default.target
+

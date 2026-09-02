@@ -122,6 +122,12 @@ impl DaemonCoordinator {
 
         if stats.messages_fetched > 0 {
             self.events.broadcast_new_messages(account.id, folder.id, stats.messages_fetched);
+            crate::notifier::DesktopNotifier::notify_new_mail(
+                &account.email,
+                &folder.display_name,
+                stats.messages_fetched,
+                None,
+            );
         }
 
         if let Ok(Some(updated_folder)) = self.storage.get_folder(folder_id).await {

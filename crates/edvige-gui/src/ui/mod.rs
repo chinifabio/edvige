@@ -1,9 +1,12 @@
+pub mod about;
 pub mod account_wizard;
 pub mod composer;
 pub mod message_list;
 pub mod message_view;
 pub mod sidebar;
 pub mod top_bar;
+
+pub use about::AboutModal;
 
 use egui::{Color32, Stroke};
 
