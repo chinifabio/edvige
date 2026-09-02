@@ -1,0 +1,15 @@
+[package]
+name = "edvige-proto"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = { workspace = true }
+edvige-core = { workspace = true }
+prost = { workspace = true }
+tonic = { workspace = true }
+uuid = { workspace = true }
+
+[build-dependencies]
+tonic-build = { workspace = true }
+

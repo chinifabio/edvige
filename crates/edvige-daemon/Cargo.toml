@@ -1,0 +1,29 @@
+[package]
+name = "edvige-daemon"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = { workspace = true }
+chrono = { workspace = true }
+clap = { workspace = true }
+directories = { workspace = true }
+edvige-core = { workspace = true }
+edvige-imap = { workspace = true }
+edvige-proto = { workspace = true }
+edvige-smtp = { workspace = true }
+edvige-storage = { workspace = true }
+futures = { workspace = true }
+prost = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tonic = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+hyper-util = { workspace = true }
+tempfile = { workspace = true }
+tower = { workspace = true }

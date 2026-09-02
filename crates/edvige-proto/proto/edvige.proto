@@ -1,0 +1,371 @@
+syntax = "proto3";
+
+package edvige;
+
+// --- Common Types ---
+
+message Empty {}
+
+enum SecurityModeProto {
+    SECURITY_PLAIN = 0;
+    SECURITY_TLS = 1;
+    SECURITY_STARTTLS = 2;
+}
+
+enum FolderRoleProto {
+    FOLDER_ROLE_INBOX = 0;
+    FOLDER_ROLE_SENT = 1;
+    FOLDER_ROLE_DRAFTS = 2;
+    FOLDER_ROLE_TRASH = 3;
+    FOLDER_ROLE_ARCHIVE = 4;
+    FOLDER_ROLE_SPAM = 5;
+    FOLDER_ROLE_JUNK = 6;
+    FOLDER_ROLE_CUSTOM = 7;
+}
+
+enum OutboxStatusProto {
+    OUTBOX_STATUS_DRAFT = 0;
+    OUTBOX_STATUS_QUEUED = 1;
+    OUTBOX_STATUS_SENDING = 2;
+    OUTBOX_STATUS_SENT = 3;
+    OUTBOX_STATUS_FAILED = 4;
+}
+
+message ServerConfigProto {
+    string host = 1;
+    uint32 port = 2;
+    SecurityModeProto security = 3;
+}
+
+message AccountCredentialsProto {
+    string username = 1;
+    string password = 2;
+}
+
+message AccountProto {
+    string id = 1;
+    string name = 2;
+    string email = 3;
+    ServerConfigProto imap_config = 4;
+    ServerConfigProto smtp_config = 5;
+    AccountCredentialsProto credentials = 6;
+    string created_at = 7;
+    string updated_at = 8;
+}
+
+message FolderProto {
+    string id = 1;
+    string account_id = 2;
+    string remote_name = 3;
+    string display_name = 4;
+    optional string delimiter = 5;
+    FolderRoleProto role = 6;
+    optional uint32 uid_validity = 7;
+    optional uint32 uid_next = 8;
+    uint32 total_count = 9;
+    uint32 unread_count = 10;
+}
+
+message EmailAddressProto {
+    optional string name = 1;
+    string address = 2;
+}
+
+message MessageFlagsProto {
+    bool seen = 1;
+    bool flagged = 2;
+    bool answered = 3;
+    bool draft = 4;
+    bool deleted = 5;
+}
+
+message MessageSummaryProto {
+    string id = 1;
+    string account_id = 2;
+    string folder_id = 3;
+    optional uint32 uid = 4;
+    optional string message_id_header = 5;
+    optional string thread_id = 6;
+    string subject = 7;
+    optional EmailAddressProto sender = 8;
+    repeated EmailAddressProto recipients = 9;
+    optional string date = 10;
+    MessageFlagsProto flags = 11;
+    string snippet = 12;
+    uint64 size = 13;
+    bool has_attachments = 14;
+}
+
+message EnvelopeProto {
+    optional string message_id_header = 1;
+    string subject = 2;
+    repeated EmailAddressProto from = 3;
+    repeated EmailAddressProto to = 4;
+    repeated EmailAddressProto cc = 5;
+    repeated EmailAddressProto bcc = 6;
+    repeated EmailAddressProto reply_to = 7;
+    optional string in_reply_to = 8;
+    optional string date = 9;
+}
+
+message AttachmentMetadataProto {
+    string id = 1;
+    string message_id = 2;
+    string filename = 3;
+    string content_type = 4;
+    uint64 size = 5;
+    string blob_hash = 6;
+    optional string content_id = 7;
+    bool is_inline = 8;
+}
+
+message MessageDetailProto {
+    MessageSummaryProto summary = 1;
+    EnvelopeProto envelope = 2;
+    optional string body_text = 3;
+    optional string body_html = 4;
+    optional string raw_blob_hash = 5;
+    repeated AttachmentMetadataProto attachments = 6;
+}
+
+message DraftAttachmentProto {
+    string filename = 1;
+    string content_type = 2;
+    bytes data = 3;
+    optional string content_id = 4;
+    bool is_inline = 5;
+}
+
+message OutboxMessageProto {
+    string id = 1;
+    string account_id = 2;
+    EmailAddressProto from = 3;
+    repeated EmailAddressProto to = 4;
+    repeated EmailAddressProto cc = 5;
+    repeated EmailAddressProto bcc = 6;
+    string subject = 7;
+    optional string body_text = 8;
+    optional string body_html = 9;
+    optional string in_reply_to = 10;
+    optional string references = 11;
+    repeated DraftAttachmentProto attachments = 12;
+    OutboxStatusProto status = 13;
+    uint32 retry_count = 14;
+    optional string last_error = 15;
+    string created_at = 16;
+    string updated_at = 17;
+    optional string sent_at = 18;
+}
+
+// --- Requests & Responses ---
+
+message ListAccountsResponse {
+    repeated AccountProto accounts = 1;
+}
+
+message GetAccountRequest {
+    string account_id = 1;
+}
+
+message CreateAccountRequest {
+    string name = 1;
+    string email = 2;
+    ServerConfigProto imap_config = 3;
+    ServerConfigProto smtp_config = 4;
+    AccountCredentialsProto credentials = 5;
+}
+
+message UpdateAccountRequest {
+    AccountProto account = 1;
+}
+
+message DeleteAccountRequest {
+    string account_id = 1;
+}
+
+message ListFoldersRequest {
+    string account_id = 1;
+}
+
+message ListFoldersResponse {
+    repeated FolderProto folders = 1;
+}
+
+message SyncFoldersRequest {
+    string account_id = 1;
+}
+
+message ListMessagesRequest {
+    string folder_id = 1;
+    uint32 limit = 2;
+    uint32 offset = 3;
+}
+
+message ListMessagesResponse {
+    repeated MessageSummaryProto messages = 1;
+}
+
+message GetMessageRequest {
+    string message_id = 1;
+}
+
+message MessageDetailResponse {
+    optional MessageDetailProto message = 1;
+}
+
+message SearchMessagesRequest {
+    string account_id = 1;
+    string query = 2;
+    uint32 limit = 3;
+    uint32 offset = 4;
+}
+
+message SearchMessagesResponse {
+    repeated MessageSummaryProto messages = 1;
+}
+
+message SyncFolderMessagesRequest {
+    string account_id = 1;
+    string folder_id = 2;
+}
+
+message SyncStatsResponse {
+    uint32 messages_fetched = 1;
+    uint32 messages_updated = 2;
+    uint32 errors = 3;
+}
+
+message GetBlobRequest {
+    string blob_hash = 1;
+}
+
+message GetBlobResponse {
+    bytes data = 1;
+}
+
+message SetFlagsRequest {
+    string message_id = 1;
+    string folder_id = 2;
+    MessageFlagsProto add_flags = 3;
+    MessageFlagsProto remove_flags = 4;
+}
+
+message MoveMessageRequest {
+    string message_id = 1;
+    string source_folder_id = 2;
+    string target_folder_id = 3;
+}
+
+message DeleteMessageRequest {
+    string message_id = 1;
+    string folder_id = 2;
+    bool permanent = 3;
+}
+
+message SaveDraftRequest {
+    OutboxMessageProto message = 1;
+}
+
+message ListOutboxRequest {
+    string account_id = 1;
+    optional OutboxStatusProto status_filter = 2;
+}
+
+message ListOutboxResponse {
+    repeated OutboxMessageProto messages = 1;
+}
+
+message QueueSendRequest {
+    string outbox_id = 1;
+}
+
+message DeleteDraftRequest {
+    string outbox_id = 1;
+}
+
+message SubscribeEventsRequest {
+    optional string account_id = 1;
+}
+
+message DaemonEventProto {
+    string event_id = 1;
+    string timestamp = 2;
+    oneof event {
+        FolderUpdatedEvent folder_updated = 3;
+        NewMessagesSyncedEvent new_messages = 4;
+        FlagsChangedEvent flags_changed = 5;
+        OutboxStatusChangedEvent outbox_status = 6;
+        SyncProgressEvent sync_progress = 7;
+    }
+}
+
+message FolderUpdatedEvent {
+    string folder_id = 1;
+    string account_id = 2;
+    uint32 total_count = 3;
+    uint32 unread_count = 4;
+}
+
+message NewMessagesSyncedEvent {
+    string folder_id = 1;
+    string account_id = 2;
+    uint32 count = 3;
+}
+
+message FlagsChangedEvent {
+    string message_id = 1;
+    string folder_id = 2;
+    MessageFlagsProto flags = 3;
+}
+
+message OutboxStatusChangedEvent {
+    string outbox_id = 1;
+    string account_id = 2;
+    OutboxStatusProto status = 3;
+}
+
+message SyncProgressEvent {
+    string account_id = 1;
+    string message = 2;
+}
+
+// --- Services ---
+
+service AccountService {
+    rpc ListAccounts (Empty) returns (ListAccountsResponse);
+    rpc GetAccount (GetAccountRequest) returns (AccountProto);
+    rpc CreateAccount (CreateAccountRequest) returns (AccountProto);
+    rpc UpdateAccount (UpdateAccountRequest) returns (AccountProto);
+    rpc DeleteAccount (DeleteAccountRequest) returns (Empty);
+}
+
+service FolderService {
+    rpc ListFolders (ListFoldersRequest) returns (ListFoldersResponse);
+    rpc SyncFolders (SyncFoldersRequest) returns (ListFoldersResponse);
+}
+
+service MessageService {
+    rpc ListMessages (ListMessagesRequest) returns (ListMessagesResponse);
+    rpc GetMessage (GetMessageRequest) returns (MessageDetailResponse);
+    rpc SearchMessages (SearchMessagesRequest) returns (SearchMessagesResponse);
+    rpc SyncFolderMessages (SyncFolderMessagesRequest) returns (SyncStatsResponse);
+    rpc GetBlob (GetBlobRequest) returns (GetBlobResponse);
+}
+
+service MutationService {
+    rpc SetFlags (SetFlagsRequest) returns (Empty);
+    rpc MoveMessage (MoveMessageRequest) returns (Empty);
+    rpc DeleteMessage (DeleteMessageRequest) returns (Empty);
+}
+
+service OutboxService {
+    rpc SaveDraft (SaveDraftRequest) returns (OutboxMessageProto);
+    rpc ListOutbox (ListOutboxRequest) returns (ListOutboxResponse);
+    rpc QueueSend (QueueSendRequest) returns (OutboxMessageProto);
+    rpc DeleteDraft (DeleteDraftRequest) returns (Empty);
+}
+
+service EventStreamService {
+    rpc SubscribeEvents (SubscribeEventsRequest) returns (stream DaemonEventProto);
+}
+
