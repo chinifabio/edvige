@@ -4,12 +4,22 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-anyhow.workspace = true
-nom.workspace = true
-rustls.workspace = true
-thiserror.workspace = true
-tokio.workspace = true
-tokio-rustls.workspace = true
-tracing.workspace = true
-tracing-subscriber.workspace = true
-webpki-roots.workspace = true
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+edvige-core = { workspace = true }
+edvige-storage = { workspace = true }
+futures = { workspace = true }
+mail-parser = { workspace = true }
+nom = { workspace = true }
+rustls = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-rustls = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+webpki-roots = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

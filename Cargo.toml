@@ -8,10 +8,13 @@ members = [
 
 [workspace.dependencies]
 anyhow = "1"
+async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 directories = "5.0"
 edvige-core = { path = "crates/edvige-core" }
 edvige-storage = { path = "crates/edvige-storage" }
+futures = "0.3"
+mail-parser = "0.9"
 nom = "8.0"
 rustls = "0.23"
 serde = { version = "1.0", features = ["derive"] }
