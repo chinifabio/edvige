@@ -146,6 +146,10 @@ impl StorageEngine {
         db::messages::get_message_by_uid(self.db.inner(), folder_id, uid).await
     }
 
+    pub async fn get_max_uid_for_folder(&self, folder_id: FolderId) -> Result<Option<u32>, StorageError> {
+        db::messages::get_max_uid_for_folder(self.db.inner(), folder_id).await
+    }
+
     pub async fn list_messages_summary(
         &self,
         folder_id: FolderId,

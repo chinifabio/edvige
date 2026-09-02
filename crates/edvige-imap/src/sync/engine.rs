@@ -100,11 +100,9 @@ impl SyncEngine {
         let start_uid = if uid_validity_changed {
             1
         } else {
-            // Find max known UID in storage for this folder
-            let existing = storage.list_messages_summary(folder.id, 1, 0).await?;
-            existing
-                .first()
-                .and_then(|m| m.uid)
+            storage
+                .get_max_uid_for_folder(folder.id)
+                .await?
                 .map(|u| u + 1)
                 .unwrap_or(1)
         };

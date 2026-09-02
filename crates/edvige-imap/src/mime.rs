@@ -163,8 +163,10 @@ fn addr_to_model(addr: &Addr) -> EmailAddress {
 
 fn clean_snippet(text: &str, max_len: usize) -> String {
     let single_line = text.split_whitespace().collect::<Vec<_>>().join(" ");
-    if single_line.len() > max_len {
-        format!("{}...", &single_line[..max_len])
+    let char_count = single_line.chars().count();
+    if char_count > max_len {
+        let truncated: String = single_line.chars().take(max_len).collect();
+        format!("{}...", truncated)
     } else {
         single_line
     }

@@ -19,6 +19,18 @@ pub async fn insert_or_update_message(
     let date_str = detail.summary.date.map(|d| d.to_rfc3339());
     let flags_bits = detail.summary.flags.to_bits() as i64;
 
+    let existing_id: Option<String> = if let Some(uid) = detail.summary.uid {
+        sqlx::query_scalar("SELECT id FROM messages WHERE folder_id = ?1 AND uid = ?2")
+            .bind(detail.summary.folder_id.to_string())
+            .bind(uid as i64)
+            .fetch_optional(pool)
+            .await?
+    } else {
+        None
+    };
+
+    let target_id = existing_id.unwrap_or_else(|| detail.summary.id.to_string());
+
     sqlx::query(
         r#"
         INSERT INTO messages (
@@ -49,7 +61,7 @@ pub async fn insert_or_update_message(
             updated_at = excluded.updated_at
         "#,
     )
-    .bind(detail.summary.id.to_string())
+    .bind(&target_id)
     .bind(detail.summary.account_id.to_string())
     .bind(detail.summary.folder_id.to_string())
     .bind(detail.summary.uid.map(|u| u as i64))
@@ -475,4 +487,18 @@ fn row_to_message_summary(row: &sqlx::sqlite::SqliteRow) -> Result<MessageSummar
         size: size as u64,
         has_attachments: has_attachments != 0,
     })
+}
+
+pub async fn get_max_uid_for_folder(
+    pool: &Pool<Sqlite>,
+    folder_id: FolderId,
+) -> Result<Option<u32>, StorageError> {
+    let max_uid: Option<i64> = sqlx::query_scalar(
+        "SELECT MAX(uid) FROM messages WHERE folder_id = ?1",
+    )
+    .bind(folder_id.to_string())
+    .fetch_one(pool)
+    .await?;
+
+    Ok(max_uid.map(|u| u as u32))
 }
