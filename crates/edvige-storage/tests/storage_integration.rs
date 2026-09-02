@@ -245,3 +245,66 @@ async fn test_storage_engine_open_file_backed() {
     assert!(fetched.is_some());
     assert_eq!(fetched.unwrap().email, "persisted@example.com");
 }
+
+#[tokio::test]
+async fn test_outbox_storage_lifecycle() {
+    let dir = tempdir().unwrap();
+    let engine = StorageEngine::in_memory(dir.path()).await.unwrap();
+
+    let account = Account::new(
+        "User",
+        "user@example.com",
+        ServerConfig {
+            host: "imap.example.com".into(),
+            port: 993,
+            security: SecurityMode::Tls,
+        },
+        ServerConfig {
+            host: "smtp.example.com".into(),
+            port: 465,
+            security: SecurityMode::Tls,
+        },
+        AccountCredentials {
+            username: "user".into(),
+            password: "pw".into(),
+        },
+    );
+    engine.insert_account(&account).await.unwrap();
+
+    let mut outbox_msg = edvige_core::OutboxMessage::new_draft(
+        account.id,
+        EmailAddress::new("user@example.com"),
+        vec![EmailAddress::new("friend@example.com")],
+        "Hello Outbox",
+    );
+    outbox_msg.body_text = Some("Draft text".into());
+
+    // 1. Save draft
+    engine.save_outbox_message(&outbox_msg).await.unwrap();
+
+    let fetched = engine.get_outbox_message(outbox_msg.id).await.unwrap().unwrap();
+    assert_eq!(fetched.status, edvige_core::OutboxStatus::Draft);
+    assert_eq!(fetched.subject, "Hello Outbox");
+
+    // 2. Queue it
+    outbox_msg.queue();
+    engine.save_outbox_message(&outbox_msg).await.unwrap();
+
+    let queued = engine.peek_queued_outbox(account.id, 10).await.unwrap();
+    assert_eq!(queued.len(), 1);
+
+    // 3. Mark sending then sent
+    engine.mark_outbox_sending(outbox_msg.id).await.unwrap();
+    let sending_msg = engine.get_outbox_message(outbox_msg.id).await.unwrap().unwrap();
+    assert_eq!(sending_msg.status, edvige_core::OutboxStatus::Sending);
+
+    engine.mark_outbox_sent(outbox_msg.id).await.unwrap();
+    let sent_msg = engine.get_outbox_message(outbox_msg.id).await.unwrap().unwrap();
+    assert_eq!(sent_msg.status, edvige_core::OutboxStatus::Sent);
+    assert!(sent_msg.sent_at.is_some());
+
+    // 4. Delete outbox message
+    let deleted = engine.delete_outbox_message(outbox_msg.id).await.unwrap();
+    assert!(deleted);
+    assert!(engine.get_outbox_message(outbox_msg.id).await.unwrap().is_none());
+}

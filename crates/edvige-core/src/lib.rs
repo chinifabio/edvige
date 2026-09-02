@@ -4,6 +4,7 @@ pub mod error;
 pub mod folder;
 pub mod message;
 pub mod mutation;
+pub mod outbox;
 
 pub use account::{Account, AccountCredentials, AccountId, SecurityMode, ServerConfig};
 pub use attachment::{AttachmentId, AttachmentMetadata};
@@ -13,6 +14,7 @@ pub use message::{
     EmailAddress, Envelope, MessageDetail, MessageFlags, MessageId, MessageSummary,
 };
 pub use mutation::{Mutation, MutationId, MutationStatus, MutationType};
+pub use outbox::{DraftAttachment, OutboxId, OutboxMessage, OutboxStatus};
 
 #[cfg(test)]
 mod tests {
@@ -79,5 +81,17 @@ mod tests {
         let deserialized: Mutation = serde_json::from_str(&json).unwrap();
         assert_eq!(mutation.id, deserialized.id);
         assert_eq!(mutation.account_id, deserialized.account_id);
+    }
+
+    #[test]
+    fn test_outbox_message_creation() {
+        let account_id = AccountId::new();
+        let from = EmailAddress::new("sender@example.com");
+        let to = vec![EmailAddress::new("recipient@example.com")];
+        let mut outbox = OutboxMessage::new_draft(account_id, from, to, "Test Subject");
+
+        assert_eq!(outbox.status, OutboxStatus::Draft);
+        outbox.queue();
+        assert_eq!(outbox.status, OutboxStatus::Queued);
     }
 }

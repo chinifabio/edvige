@@ -222,6 +222,52 @@ impl StorageEngine {
     pub async fn delete_mutation(&self, mutation_id: MutationId) -> Result<bool, StorageError> {
         db::mutations::delete_mutation(self.db.inner(), mutation_id).await
     }
+
+    // --- Outbox Operations ---
+    pub async fn save_outbox_message(&self, msg: &edvige_core::OutboxMessage) -> Result<(), StorageError> {
+        db::outbox::save_outbox_message(self.db.inner(), msg).await
+    }
+
+    pub async fn get_outbox_message(&self, id: edvige_core::OutboxId) -> Result<Option<edvige_core::OutboxMessage>, StorageError> {
+        db::outbox::get_outbox_message(self.db.inner(), id).await
+    }
+
+    pub async fn list_outbox_messages(
+        &self,
+        account_id: AccountId,
+        status_filter: Option<edvige_core::OutboxStatus>,
+    ) -> Result<Vec<edvige_core::OutboxMessage>, StorageError> {
+        db::outbox::list_outbox_messages(self.db.inner(), account_id, status_filter).await
+    }
+
+    pub async fn peek_queued_outbox(
+        &self,
+        account_id: AccountId,
+        limit: u32,
+    ) -> Result<Vec<edvige_core::OutboxMessage>, StorageError> {
+        db::outbox::peek_queued_outbox(self.db.inner(), account_id, limit).await
+    }
+
+    pub async fn mark_outbox_sending(&self, id: edvige_core::OutboxId) -> Result<(), StorageError> {
+        db::outbox::mark_outbox_sending(self.db.inner(), id).await
+    }
+
+    pub async fn mark_outbox_sent(&self, id: edvige_core::OutboxId) -> Result<(), StorageError> {
+        db::outbox::mark_outbox_sent(self.db.inner(), id).await
+    }
+
+    pub async fn mark_outbox_failed(
+        &self,
+        id: edvige_core::OutboxId,
+        error_msg: &str,
+        max_retries: u32,
+    ) -> Result<edvige_core::OutboxStatus, StorageError> {
+        db::outbox::mark_outbox_failed(self.db.inner(), id, error_msg, max_retries).await
+    }
+
+    pub async fn delete_outbox_message(&self, id: edvige_core::OutboxId) -> Result<bool, StorageError> {
+        db::outbox::delete_outbox_message(self.db.inner(), id).await
+    }
 }
 
 #[cfg(test)]

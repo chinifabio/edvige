@@ -2,6 +2,7 @@ pub mod accounts;
 pub mod folders;
 pub mod messages;
 pub mod mutations;
+pub mod outbox;
 
 use std::path::Path;
 use std::str::FromStr;

@@ -4,14 +4,18 @@ members = [
     "crates/edvige-core",
     "crates/edvige-storage",
     "crates/edvige-imap",
+    "crates/edvige-smtp",
 ]
 
 [workspace.dependencies]
 anyhow = "1"
 async-trait = "0.1"
+base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
 directories = "5.0"
 edvige-core = { path = "crates/edvige-core" }
+edvige-imap = { path = "crates/edvige-imap" }
+edvige-smtp = { path = "crates/edvige-smtp" }
 edvige-storage = { path = "crates/edvige-storage" }
 futures = "0.3"
 mail-parser = "0.9"
