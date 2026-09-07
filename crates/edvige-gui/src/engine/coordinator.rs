@@ -6,16 +6,16 @@ use edvige_smtp::OutboxDispatcher;
 use edvige_storage::StorageEngine;
 use tokio::sync::{watch, Mutex};
 
-use crate::events::EventBroadcaster;
+use super::events::EventBroadcaster;
 
 #[derive(Clone)]
-pub struct DaemonCoordinator {
+pub struct AppCoordinator {
     storage: StorageEngine,
     events: EventBroadcaster,
     workers: Arc<Mutex<HashMap<AccountId, watch::Sender<bool>>>>,
 }
 
-impl DaemonCoordinator {
+impl AppCoordinator {
     pub fn new(storage: StorageEngine, events: EventBroadcaster) -> Self {
         Self {
             storage,
@@ -34,7 +34,7 @@ impl DaemonCoordinator {
 
     pub async fn start(&self) -> anyhow::Result<()> {
         let accounts = self.storage.list_accounts().await?;
-        tracing::info!("Initializing daemon coordinator for {} account(s)", accounts.len());
+        tracing::info!("Initializing background engine for {} account(s)", accounts.len());
 
         for account in accounts {
             self.start_account_worker(account.id).await;
@@ -68,7 +68,63 @@ impl DaemonCoordinator {
 
                         // Find INBOX to launch IDLE
                         if let Some(inbox) = folders.iter().find(|f| f.role == FolderRole::Inbox) {
-                            IdleWorker::run_loop(account.clone(), inbox.clone(), storage.clone(), shutdown_rx).await;
+                            let storage_cb = storage.clone();
+                            let events_cb = events.clone();
+                            let account_email = account.email.clone();
+                            let account_id_val = account.id;
+
+                            let on_sync: edvige_imap::sync::idle::IdleSyncCallback =
+                                std::sync::Arc::new(move |folder, stats| {
+                                    if stats.messages_fetched > 0 {
+                                        events_cb.broadcast_new_messages(
+                                            account_id_val,
+                                            folder.id,
+                                            stats.messages_fetched,
+                                        );
+
+                                        let storage_inner = storage_cb.clone();
+                                        let events_inner = events_cb.clone();
+                                        let folder_id = folder.id;
+                                        let folder_name = folder.display_name.clone();
+                                        let email = account_email.clone();
+                                        let fetched = stats.messages_fetched;
+
+                                        tokio::spawn(async move {
+                                            let latest_subject = match storage_inner
+                                                .list_messages_summary(folder_id, 1, 0)
+                                                .await
+                                            {
+                                                Ok(msgs) => msgs.into_iter().next().map(|m| m.subject),
+                                                Err(_) => None,
+                                            };
+
+                                            crate::notifier::DesktopNotifier::notify_new_mail(
+                                                &email,
+                                                &folder_name,
+                                                fetched,
+                                                latest_subject.as_deref(),
+                                            );
+
+                                            if let Ok(Some(fld)) = storage_inner.get_folder(folder_id).await {
+                                                events_inner.broadcast_folder_updated(
+                                                    account_id_val,
+                                                    folder_id,
+                                                    fld.total_count,
+                                                    fld.unread_count,
+                                                );
+                                            }
+                                        });
+                                    }
+                                });
+
+                            IdleWorker::run_loop(
+                                account.clone(),
+                                inbox.clone(),
+                                storage.clone(),
+                                shutdown_rx,
+                                Some(on_sync),
+                            )
+                            .await;
                         }
                     }
                 }
@@ -122,11 +178,15 @@ impl DaemonCoordinator {
 
         if stats.messages_fetched > 0 {
             self.events.broadcast_new_messages(account.id, folder.id, stats.messages_fetched);
+            let latest_subject = match self.storage.list_messages_summary(folder_id, 1, 0).await {
+                Ok(msgs) => msgs.into_iter().next().map(|m| m.subject),
+                Err(_) => None,
+            };
             crate::notifier::DesktopNotifier::notify_new_mail(
                 &account.email,
                 &folder.display_name,
                 stats.messages_fetched,
-                None,
+                latest_subject.as_deref(),
             );
         }
 

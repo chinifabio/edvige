@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 use edvige_core::{Account, Folder};
 use edvige_storage::StorageEngine;
@@ -9,6 +10,8 @@ use crate::error::ImapError;
 use crate::protocol::response::UntaggedResponse;
 use crate::sync::engine::SyncEngine;
 
+pub type IdleSyncCallback = Arc<dyn Fn(&Folder, &crate::SyncStats) + Send + Sync>;
+
 pub struct IdleWorker;
 
 impl IdleWorker {
@@ -17,6 +20,7 @@ impl IdleWorker {
         folder: Folder,
         storage: StorageEngine,
         mut shutdown_rx: watch::Receiver<bool>,
+        on_sync: Option<IdleSyncCallback>,
     ) {
         tracing::info!("Starting IDLE worker for account '{}' on folder '{}'", account.email, folder.remote_name);
 
@@ -24,7 +28,7 @@ impl IdleWorker {
         const MAX_BACKOFF: Duration = Duration::from_secs(60);
 
         while !*shutdown_rx.borrow() {
-            match Self::run_session(&account, &folder, &storage, &mut shutdown_rx).await {
+            match Self::run_session(&account, &folder, &storage, &mut shutdown_rx, &on_sync).await {
                 Ok(_) => {
                     tracing::info!("IDLE session ended gracefully for '{}'", folder.remote_name);
                     backoff = Duration::from_secs(2);
@@ -57,6 +61,7 @@ impl IdleWorker {
         folder: &Folder,
         storage: &StorageEngine,
         shutdown_rx: &mut watch::Receiver<bool>,
+        on_sync: &Option<IdleSyncCallback>,
     ) -> Result<(), ImapError> {
         let mut session = ImapSession::connect(&account.imap_config, &account.credentials).await?;
 
@@ -116,7 +121,10 @@ impl IdleWorker {
             session.stop_idle(&idle_tag).await?;
 
             if need_sync {
-                let _ = SyncEngine::sync_folder(account, folder, storage, &mut session).await?;
+                let stats = SyncEngine::sync_folder(account, folder, storage, &mut session).await?;
+                if let Some(cb) = on_sync {
+                    cb(folder, &stats);
+                }
             }
 
             let _ = SyncEngine::process_mutations(account, storage, &mut session).await?;

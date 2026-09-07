@@ -1,11 +1,11 @@
-use edvige_proto::FolderRoleProto;
+use edvige_core::{AccountId, FolderId, FolderRole};
 use egui::{Color32, RichText, ScrollArea, Ui};
 
 use crate::state::AppState;
 
 pub enum SidebarAction {
-    SelectAccount(String),
-    SelectFolder(String),
+    SelectAccount(AccountId),
+    SelectFolder(FolderId),
     SyncAllFolders,
 }
 
@@ -31,9 +31,9 @@ pub fn render_sidebar(ui: &mut Ui, state: &mut AppState) -> Option<SidebarAction
                 .show_ui(ui, |ui| {
                     for acc in &state.accounts {
                         let label = format!("{} ({})", acc.name, acc.email);
-                        let is_selected = state.selected_account_id.as_deref() == Some(&acc.id);
+                        let is_selected = state.selected_account_id == Some(acc.id);
                         if ui.selectable_label(is_selected, label).clicked() {
-                            action = Some(SidebarAction::SelectAccount(acc.id.clone()));
+                            action = Some(SidebarAction::SelectAccount(acc.id));
                         }
                     }
                 });
@@ -59,17 +59,16 @@ pub fn render_sidebar(ui: &mut Ui, state: &mut AppState) -> Option<SidebarAction
             .id_salt("sidebar_folders_scroll")
             .show(ui, |ui| {
                 for folder in &state.folders {
-                    let is_selected = state.selected_folder_id.as_deref() == Some(&folder.id);
-                    let role = FolderRoleProto::try_from(folder.role).unwrap_or(FolderRoleProto::FolderRoleCustom);
-                    let icon = match role {
-                        FolderRoleProto::FolderRoleInbox => "📥",
-                        FolderRoleProto::FolderRoleSent => "📤",
-                        FolderRoleProto::FolderRoleDrafts => "📝",
-                        FolderRoleProto::FolderRoleTrash => "🗑️",
-                        FolderRoleProto::FolderRoleArchive => "📦",
-                        FolderRoleProto::FolderRoleSpam => "🚫",
-                        FolderRoleProto::FolderRoleJunk => "⚠️",
-                        FolderRoleProto::FolderRoleCustom => "📁",
+                    let is_selected = state.selected_folder_id == Some(folder.id);
+                    let icon = match folder.role {
+                        FolderRole::Inbox => "📥",
+                        FolderRole::Sent => "📤",
+                        FolderRole::Drafts => "📝",
+                        FolderRole::Trash => "🗑️",
+                        FolderRole::Archive => "📦",
+                        FolderRole::Spam => "🚫",
+                        FolderRole::Junk => "⚠️",
+                        FolderRole::Custom => "📁",
                     };
 
                     let folder_text = if folder.unread_count > 0 {
@@ -85,7 +84,7 @@ pub fn render_sidebar(ui: &mut Ui, state: &mut AppState) -> Option<SidebarAction
 
                     let btn = ui.selectable_label(is_selected, text);
                     if btn.clicked() {
-                        action = Some(SidebarAction::SelectFolder(folder.id.clone()));
+                        action = Some(SidebarAction::SelectFolder(folder.id));
                     }
                 }
             });
@@ -93,4 +92,3 @@ pub fn render_sidebar(ui: &mut Ui, state: &mut AppState) -> Option<SidebarAction
 
     action
 }
-

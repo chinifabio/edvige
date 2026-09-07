@@ -7,6 +7,12 @@ pub mod sidebar;
 pub mod top_bar;
 
 pub use about::AboutModal;
+pub use account_wizard::{render_account_wizard, AccountWizardAction};
+pub use composer::{render_composer, ComposerAction};
+pub use message_list::{render_message_list, MessageListAction};
+pub use message_view::{render_message_view, MessageViewAction};
+pub use sidebar::{render_sidebar, SidebarAction};
+pub use top_bar::{render_top_bar, TopBarAction};
 
 use egui::{Color32, Stroke};
 

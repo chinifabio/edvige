@@ -1,14 +1,14 @@
 [Desktop Entry]
 Name=Edvige Mail
 GenericName=Email Client
-Comment=Decoupled, Local-First Desktop Email Client
+Comment=Fast, Local-First Desktop Email Client
 Exec=~/.local/bin/edvige
 Icon=edvige
 Terminal=false
 Type=Application
 Categories=Network;Email;
 StartupNotify=true
-StartupWMClass=edvige-gui
+StartupWMClass=edvige
 Keywords=mail;email;imap;smtp;client;
 Actions=Compose;
 

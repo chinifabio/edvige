@@ -1,13 +1,14 @@
+use edvige_core::MessageId;
 use egui::{Color32, Frame, Margin, RichText, Rounding, ScrollArea, Stroke, Ui};
 
 use crate::state::AppState;
 
 pub enum MessageViewAction {
-    Reply(String),
-    Forward(String),
-    ToggleFlag(String, bool),
-    ToggleRead(String, bool),
-    Delete(String),
+    Reply(MessageId),
+    Forward(MessageId),
+    ToggleFlag(MessageId, bool),
+    ToggleRead(MessageId, bool),
+    Delete(MessageId),
     OpenHtmlInBrowser(String), // HTML string
     DownloadAttachment(String, String), // (blob_hash, filename)
 }
@@ -25,36 +26,32 @@ pub fn render_message_view(ui: &mut Ui, state: &mut AppState) -> Option<MessageV
         }
     };
 
-    let summary = match &detail.summary {
-        Some(s) => s,
-        None => return None,
-    };
-
-    let is_seen = summary.flags.as_ref().map_or(false, |f| f.seen);
-    let is_flagged = summary.flags.as_ref().map_or(false, |f| f.flagged);
+    let summary = &detail.summary;
+    let is_seen = summary.flags.seen;
+    let is_flagged = summary.flags.flagged;
 
     ui.vertical(|ui| {
         // --- 1. Action Toolbar ---
         ui.horizontal(|ui| {
             if ui.button("↩ Reply").clicked() {
-                action = Some(MessageViewAction::Reply(summary.id.clone()));
+                action = Some(MessageViewAction::Reply(summary.id));
             }
             if ui.button("↪ Forward").clicked() {
-                action = Some(MessageViewAction::Forward(summary.id.clone()));
+                action = Some(MessageViewAction::Forward(summary.id));
             }
 
             let star_text = if is_flagged { "⭐ Starred" } else { "☆ Star" };
             if ui.button(star_text).clicked() {
-                action = Some(MessageViewAction::ToggleFlag(summary.id.clone(), !is_flagged));
+                action = Some(MessageViewAction::ToggleFlag(summary.id, !is_flagged));
             }
 
             let read_text = if is_seen { "✉ Mark Unread" } else { "✉ Mark Read" };
             if ui.button(read_text).clicked() {
-                action = Some(MessageViewAction::ToggleRead(summary.id.clone(), !is_seen));
+                action = Some(MessageViewAction::ToggleRead(summary.id, !is_seen));
             }
 
             if ui.button("🗑 Delete").clicked() {
-                action = Some(MessageViewAction::Delete(summary.id.clone()));
+                action = Some(MessageViewAction::Delete(summary.id));
             }
 
             if let Some(ref html) = detail.body_html {
@@ -123,10 +120,10 @@ pub fn render_message_view(ui: &mut Ui, state: &mut AppState) -> Option<MessageV
             }
 
             // Date
-            if let Some(ref date_str) = summary.date {
+            if let Some(ref date) = summary.date {
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("Date:").strong().color(Color32::GRAY));
-                    ui.label(RichText::new(date_str).color(Color32::LIGHT_GRAY));
+                    ui.label(RichText::new(date.to_rfc3339()).color(Color32::LIGHT_GRAY));
                 });
             }
         });

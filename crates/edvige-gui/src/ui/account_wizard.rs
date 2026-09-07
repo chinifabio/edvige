@@ -1,4 +1,4 @@
-use edvige_proto::SecurityModeProto;
+use edvige_core::SecurityMode;
 use egui::{Color32, RichText, Window};
 
 use crate::state::AppState;
@@ -59,9 +59,9 @@ pub fn render_account_wizard(ctx: &egui::Context, state: &mut AppState) -> Optio
                         egui::ComboBox::from_id_salt("wizard_imap_sec_combo")
                             .selected_text(format!("{:?}", state.wizard_imap_sec))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut state.wizard_imap_sec, SecurityModeProto::SecurityTls, "TLS (Port 993)");
-                                ui.selectable_value(&mut state.wizard_imap_sec, SecurityModeProto::SecurityStarttls, "STARTTLS (Port 143)");
-                                ui.selectable_value(&mut state.wizard_imap_sec, SecurityModeProto::SecurityPlain, "Plain (Port 143)");
+                                ui.selectable_value(&mut state.wizard_imap_sec, SecurityMode::Tls, "TLS (Port 993)");
+                                ui.selectable_value(&mut state.wizard_imap_sec, SecurityMode::StartTls, "STARTTLS (Port 143)");
+                                ui.selectable_value(&mut state.wizard_imap_sec, SecurityMode::Plain, "Plain (Port 143)");
                             });
                         ui.end_row();
                     });
@@ -86,9 +86,9 @@ pub fn render_account_wizard(ctx: &egui::Context, state: &mut AppState) -> Optio
                         egui::ComboBox::from_id_salt("wizard_smtp_sec_combo")
                             .selected_text(format!("{:?}", state.wizard_smtp_sec))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut state.wizard_smtp_sec, SecurityModeProto::SecurityTls, "TLS (Port 465)");
-                                ui.selectable_value(&mut state.wizard_smtp_sec, SecurityModeProto::SecurityStarttls, "STARTTLS (Port 587)");
-                                ui.selectable_value(&mut state.wizard_smtp_sec, SecurityModeProto::SecurityPlain, "Plain (Port 25/587)");
+                                ui.selectable_value(&mut state.wizard_smtp_sec, SecurityMode::Tls, "TLS (Port 465)");
+                                ui.selectable_value(&mut state.wizard_smtp_sec, SecurityMode::StartTls, "STARTTLS (Port 587)");
+                                ui.selectable_value(&mut state.wizard_smtp_sec, SecurityMode::Plain, "Plain (Port 25/587)");
                             });
                         ui.end_row();
                     });

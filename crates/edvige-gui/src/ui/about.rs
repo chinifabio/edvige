@@ -49,13 +49,13 @@ impl AboutModal {
 
                     ui.heading(RichText::new("Edvige Mail").strong());
                     ui.label(RichText::new("Version 0.1.0").color(Color32::GRAY));
-                    ui.label(RichText::new("Decoupled, Local-First Desktop Email Client").italics());
+                    ui.label(RichText::new("Local-First Desktop Email Client").italics());
 
                     ui.add_space(8.0);
                     ui.separator();
                     ui.add_space(8.0);
 
-                    ui.label("• Background Daemon Architecture (gRPC over Unix Domain Sockets)");
+                    ui.label("• Single-Process Monolithic Architecture with Background Tray Life");
                     ui.label("• Local-First SQLite + FTS5 Full-Text Search");
                     ui.label("• Real-Time IMAP Synchronization & IDLE Push");
                     ui.label("• Content-Addressable Blob Store & Fast MIME Parser");

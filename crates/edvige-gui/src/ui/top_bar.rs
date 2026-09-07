@@ -1,6 +1,6 @@
 use egui::{Color32, RichText, Ui};
 
-use crate::state::{AppState, ConnectionStatus};
+use crate::state::AppState;
 
 pub enum TopBarAction {
     Compose,
@@ -70,24 +70,9 @@ pub fn render_top_bar(ui: &mut Ui, state: &mut AppState) -> Option<TopBarAction>
         }
 
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            // Connection Status Dot & Text
-            match &state.connection_status {
-                ConnectionStatus::Connected => {
-                    ui.label(RichText::new("● Connected").color(Color32::from_rgb(50, 205, 50)));
-                }
-                ConnectionStatus::Connecting => {
-                    ui.label(RichText::new("● Connecting...").color(Color32::from_rgb(255, 165, 0)));
-                }
-                ConnectionStatus::Disconnected(err) => {
-                    ui.label(RichText::new("● Disconnected").color(Color32::from_rgb(220, 20, 60)))
-                        .on_hover_text(err);
-                }
-            }
-
             // Status message toast
             if let Some((msg, created_at)) = &state.status_message {
                 if created_at.elapsed().as_secs() < 4 {
-                    ui.separator();
                     ui.label(RichText::new(msg).italics().color(Color32::LIGHT_GRAY));
                 }
             }

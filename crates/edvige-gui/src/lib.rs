@@ -1,9 +1,10 @@
 pub mod app;
-pub mod client;
+pub mod engine;
+pub mod ipc;
+pub mod notifier;
 pub mod state;
+pub mod tray;
 pub mod ui;
 
 pub use app::EdvigeApp;
-pub use client::DaemonClient;
 pub use state::AppState;
-
